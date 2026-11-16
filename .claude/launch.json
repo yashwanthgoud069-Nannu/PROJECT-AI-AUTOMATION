@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kirana",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["kirana_assistant/app.py", "--no-browser"],
+      "port": 8000
+    },
+    {
+      "name": "kirana-test",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["kirana_assistant/app.py", "--no-browser", "--port", "8765", "--data", "kirana_assistant/test_shop.json"],
+      "port": 8765
+    }
+  ]
+}

@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="te">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kirana Voice Assistant</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --ink:#18212f; --muted:#667085; --line:#e4e7ec;
+  --brand:#0e9f6e; --brand-ink:#057a55; --brand-soft:#e6f6ef;
+  --warn:#b54708; --warn-soft:#fef0c7; --bad:#b42318; --bad-soft:#fee4e2;
+  --me:#e6f6ef; --bot:#f2f4f7; --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0d1117; --card:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#262d36;
+  --brand:#23a971; --brand-ink:#4ade9c; --brand-soft:#11291f;
+  --warn:#f5b54a; --warn-soft:#33260c; --bad:#ff7b72; --bad-soft:#3a1715;
+  --me:#11291f; --bot:#1f252d; --shadow:none;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,"Nirmala UI","Noto Sans Telugu","Noto Sans Devanagari",Roboto,sans-serif}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.wrap{max-width:1500px;margin:0 auto;padding:16px}
+
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.logo{width:44px;height:44px;border-radius:12px;background:var(--brand);color:#fff;display:grid;place-items:center;flex:none}
+h1{font-size:20px;margin:0;line-height:1.2}
+.sub{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:var(--shadow)}
+.stat span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-size:12.5px;font-weight:400}
+.stat.warn b{color:var(--warn)}
+.stat small{display:block}
+.stat-btn{text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer}
+.stat-btn:hover{border-color:var(--brand)}
+.stat-btn em{font-style:normal;float:right;color:var(--brand-ink);text-transform:none;letter-spacing:0;font-size:12.5px}
+dialog{width:min(560px,calc(100vw - 32px));max-height:min(86vh,760px);padding:0;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 12px 40px rgba(16,24,40,.25)}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(16,24,40,.45)}
+.dlg-body{overflow:auto;padding:14px 16px 18px}
+.dlg-body h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:18px 0 6px}
+.mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mini div{background:var(--bg);border-radius:12px;padding:10px 12px}
+.mini span{display:block;color:var(--muted);font-size:12.5px}
+.mini b{font-size:20px;font-variant-numeric:tabular-nums}
+.mini small{color:var(--muted);margin-left:6px}
+.note{color:var(--muted);font-size:13.5px;margin:10px 0 0}
+.danger{color:var(--bad);border-color:var(--bad-soft)}
+.btn.danger:hover:not(:disabled){border-color:var(--bad)}
+
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) minmax(0,1.2fr);height:calc(100vh - 186px);min-height:540px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);min-height:56px}
+.card-head h2{font-size:15px;margin:0}
+.scroll{overflow:auto;flex:1;min-height:0}
+
+#log{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:88%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--me);border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--bot);border-bottom-left-radius:4px}
+#interim{min-height:22px;padding:0 16px;color:var(--muted);font-style:italic;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.chip:hover{border-color:var(--brand);color:var(--brand-ink)}
+.composer{display:flex;gap:8px;align-items:center;padding:12px 16px 16px}
+.composer input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--bg)}
+.mic{width:56px;height:56px;flex:none;border-radius:50%;border:0;background:var(--brand);color:#fff;display:grid;place-items:center;position:relative}
+.mic.on{background:var(--bad)}
+.mic.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid var(--bad);animation:pulse 1.2s infinite}
+.mic:disabled{opacity:.45;cursor:not-allowed}
+@keyframes pulse{from{transform:scale(.9);opacity:.7}to{transform:scale(1.25);opacity:0}}
+@media (prefers-reduced-motion: reduce){.mic.on::after{animation:none}}
+
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 7px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);z-index:1}
+th:first-child,td:first-child{padding-left:16px}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.local{display:block;color:var(--muted);font-size:12.5px}
+.unit{color:var(--muted);font-size:12.5px}
+.badge{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--brand-soft);color:var(--brand-ink);white-space:nowrap}
+.badge.low{background:var(--warn-soft);color:var(--warn)}
+.badge.out{background:var(--bad-soft);color:var(--bad)}
+.nowrap{white-space:nowrap}
+.cell{width:58px;border:1px solid transparent;background:transparent;border-radius:8px;padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums}
+.cell:hover,.cell:focus{border-color:var(--line);background:var(--bg);outline:none}
+.qty{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.sm{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);display:inline-grid;place-items:center;line-height:1;padding:0}
+.sm:hover{border-color:var(--brand);color:var(--brand-ink)}
+.empty{color:var(--muted);text-align:center;padding:36px 16px}
+.search{margin-left:auto;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--bg);width:150px;min-width:0}
+.bill-foot{border-top:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.total{display:flex;justify-content:space-between;align-items:baseline}
+.total b{font-size:30px;font-variant-numeric:tabular-nums}
+.btn{height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 12px;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600;height:48px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.tabs{display:inline-flex;gap:2px;background:var(--bg);border-radius:10px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 12px;border-radius:8px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.tab-due{color:var(--warn)}
+.view{display:flex;flex-direction:column;flex:1;min-height:0}
+.view[hidden],.bill-only[hidden]{display:none}
+.khata-form{display:flex;gap:8px}
+.khata-form input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--bg)}
+.pay{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pay label{color:var(--muted);font-size:13px}
+.pay .cell{width:90px;border-color:var(--line);background:var(--bg)}
+.kh{border-bottom:1px solid var(--line)}
+.kh summary{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;list-style:none}
+.kh summary::-webkit-details-marker{display:none}
+.kh summary::before{content:"›";color:var(--muted);font-size:18px;line-height:1;transition:transform .15s}
+.kh[open] summary::before{transform:rotate(90deg)}
+.kh summary:hover{background:var(--bg)}
+.kh-name{flex:1;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.kh-body{padding:0 16px 14px 34px;display:flex;flex-direction:column;gap:10px}
+.kh-hist{list-style:none;margin:0;padding:0;font-size:13.5px}
+.kh-hist li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:8px 0;border-top:1px dashed var(--line)}
+.kh-hist .when{color:var(--muted);font-size:12px}
+.kh-hist .amt{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.kh-hist .amt.up{color:var(--warn)}
+.kh-hist .amt.down{color:var(--brand-ink)}
+.kh-hist .bal{text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){.kh summary::before{transition:none}}
+.banner{background:var(--bad-soft);color:var(--bad);border:1px solid currentColor;border-radius:12px;padding:12px 16px;margin-bottom:14px}
+.banner code{background:var(--card);color:var(--ink);padding:1px 6px;border-radius:6px;white-space:nowrap}
+.banner a{color:inherit;font-weight:600}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100vw - 32px);z-index:9}
+.toast.show{opacity:1}
+
+@media (max-width:1200px){
+  .grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);height:auto}
+  .assistant,.bill{height:560px}
+  .stock{grid-column:1/-1}
+  .stock .scroll{overflow:visible}
+}
+@media (max-width:760px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .assistant{height:520px}.bill{height:auto}
+  .stock .scroll{overflow:auto}
+  .seg button{padding:6px 10px}
+}
+@media print{
+  body{background:#fff;color:#000}
+  .wrap>*:not(.grid),.grid>*:not(.bill),.no-print,.toast{display:none!important}
+  .grid{display:block;height:auto}
+  .bill{border:0;box-shadow:none}
+  .bill .scroll{overflow:visible}
+  .tabs{background:none}.tabs button:not([aria-selected="true"]){display:none}
+  dialog{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+    </div>
+    <div>
+      <h1>Kirana Voice Assistant</h1>
+      <div class="sub">తెలుగు · हिन्दी · English — speak or type</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" id="langs" role="group" aria-label="Language">
+      <button type="button" data-l="te">తెలుగు</button><button type="button" data-l="hi">हिन्दी</button><button type="button" data-l="en">English</button>
+    </div>
+    <button type="button" class="btn" id="voiceBtn" aria-pressed="true">🔊 Voice on</button>
+  </header>
+
+  <div class="banner" id="offline" role="alert" hidden>
+    <b>The assistant server is not running.</b> Open a terminal in the project folder, run
+    <code>python kirana_assistant/app.py</code>, keep that window open, and use
+    <a href="http://127.0.0.1:8000/">http://127.0.0.1:8000</a> (not the index.html file).
+  </div>
+
+  <section class="stats">
+    <div class="stat"><span>Bill total</span><b id="sTotal">₹0</b></div>
+    <div class="stat"><span>Items in bill</span><b id="sItems">0</b></div>
+    <button type="button" class="stat stat-btn" id="salesBtn" aria-haspopup="dialog">
+      <span>Today's sales <em>Details ›</em></span><b id="sSales">₹0</b><small id="sSalesSub"></small>
+    </button>
+    <div class="stat" id="sLowCard"><span>Low stock</span><b id="sLow">0</b></div>
+  </section>
+
+  <main class="grid">
+    <section class="card assistant">
+      <div class="card-head"><h2>Assistant</h2><span class="sub" id="status">Tap the mic or press Space</span></div>
+      <div class="scroll" id="logBox"><div id="log" aria-live="polite"></div></div>
+      <div id="interim"></div>
+      <div class="chips" id="chips"></div>
+      <form class="composer" id="form">
+        <button type="button" class="mic" id="mic" aria-label="Start listening" aria-pressed="false">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>
+        </button>
+        <input id="text" autocomplete="off" aria-label="Type a request">
+        <button class="btn" type="submit">Send</button>
+      </form>
+    </section>
+
+    <section class="card bill">
+      <div class="card-head">
+        <div class="tabs" role="tablist" aria-label="Bill or khata">
+          <button type="button" role="tab" id="tabBill" aria-selected="true" aria-controls="billView">Bill</button>
+          <button type="button" role="tab" id="tabKhata" aria-selected="false" aria-controls="khataView">Khata <span class="tab-due" id="khataTotal"></span></button>
+        </div>
+        <span class="spacer"></span>
+        <button type="button" class="btn no-print bill-only" id="newBill">New</button>
+        <button type="button" class="btn no-print bill-only" id="printBtn">Print</button>
+      </div>
+
+      <div class="view" id="billView" role="tabpanel" aria-labelledby="tabBill">
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Item</th><th>Qty</th><th class="num">Amount</th><th class="no-print"><span hidden>Remove</span></th></tr></thead>
+            <tbody id="billRows"></tbody>
+          </table>
+          <div class="empty" id="billEmpty">No items yet.</div>
+        </div>
+        <div class="bill-foot">
+          <div class="total"><span>Total <span class="sub" id="billDate"></span></span><b id="billTotal">₹0</b></div>
+          <button type="button" class="btn primary no-print" id="paidBtn">Bill paid ✓</button>
+          <form class="khata-form no-print" id="khataForm">
+            <input id="khataName" list="khataNames" maxlength="40" autocomplete="off" placeholder="Customer name" aria-label="Customer name for khata">
+            <button type="submit" class="btn" id="khataBtn">Add to khata</button>
+          </form>
+          <datalist id="khataNames"></datalist>
+        </div>
+      </div>
+
+      <div class="view" id="khataView" role="tabpanel" aria-labelledby="tabKhata" hidden>
+        <div class="scroll">
+          <div id="khataList"></div>
+          <div class="empty" id="khataEmpty">No khata yet. Put a bill on a customer's khata with "Add to khata".</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card stock">
+      <div class="card-head"><h2>Stock</h2><input class="search" id="search" type="search" placeholder="Search…" aria-label="Search products"></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Product</th><th class="num">Price ₹</th><th class="num">Stock</th><th>Status</th><th><span hidden>Add</span></th></tr></thead>
+          <tbody id="stockRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+<dialog id="salesDialog" aria-labelledby="salesTitle">
+  <div class="card-head">
+    <div><h2 id="salesTitle">Today's sales</h2><span class="sub" id="salesDate"></span></div>
+    <span class="spacer"></span>
+    <button type="button" class="sm" id="salesClose" aria-label="Close">✕</button>
+  </div>
+  <div class="dlg-body">
+    <div class="mini">
+      <div><span>Total sales</span><b id="dTotal"></b><small id="dBills"></small></div>
+      <div><span>Cash bills</span><b id="dCash"></b></div>
+      <div><span>On khata (credit)</span><b id="dCredit"></b></div>
+      <div><span>Khata payments in</span><b id="dGot"></b></div>
+    </div>
+    <p class="note" id="dInHand"></p>
+    <h3>Items sold</h3>
+    <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody id="dItems"></tbody></table>
+    <h3>Bills &amp; payments</h3>
+    <ol class="kh-hist" id="dEvents"></ol>
+    <p class="note" id="dEarlier" hidden></p>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const LI = {en: 0, te: 1, hi: 2};
+const REC = {en: 'en-IN', te: 'te-IN', hi: 'hi-IN'};
+const LANG_NAME = {en: 'English', te: 'తెలుగు', hi: 'हिन्दी'};
+const RUPEE = {en: 'rupees', te: 'రూపాయలు', hi: 'रुपये'};
+const STATUS = {en: ['In stock', 'Low', 'Out'], te: ['ఉంది', 'తక్కువ', 'లేదు'], hi: ['उपलब्ध', 'कम', 'ख़त्म']};
+const WELCOME = {
+  te: 'నమస్కారం! మైక్ నొక్కి సరుకులు చెప్పండి — ఉదా: "రెండు కిలోల బియ్యం వేయి".',
+  hi: 'नमस्ते! माइक दबाकर सामान बोलिए — जैसे: "दो किलो चावल डालो"।',
+  en: 'Hello! Tap the mic and say the items — e.g. "add 2 kg rice".',
+};
+const PLACEHOLDER = {te: 'టైప్ చేయండి… ఉదా: 2 kilo biyyam', hi: 'लिखिए… जैसे: do kilo chawal', en: 'Type… e.g. 2 kg rice'};
+const EXAMPLES = {
+  te: ['రెండు కిలోల బియ్యం వేయి', 'biyyam okatinnara kilo esey', 'చక్కెర ధర ఎంత', 'పాలు ఎన్ని ఉన్నాయి', 'మొత్తం ఎంత అయింది', 'రమేష్ ఖాతాలో రాసుకో', 'రమేష్ 100 రూపాయలు ఇచ్చాడు', 'ఖాతా బాకీ ఎంత'],
+  hi: ['दो किलो चावल डालो', 'dedh kilo aata aur 6 ande', 'चीनी का दाम क्या है', 'कुल कितना हुआ', 'हो गया', 'रमेश के खाते में लिखो', 'रमेश ने 100 दिए', 'उधार कितना है'],
+  en: ['add 2 kg rice and 3 milk packets', 'price of sugar', 'how much oil is left', 'total', 'bill paid', "put it on Ramesh's khata", 'Ramesh paid 100', 'khata dues'],
+};
+
+const KH = {
+  en: {bill: 'Bill', paid: 'Payment received', settled: 'Settled', received: 'Received', record: 'Record payment', due: 'due', none: 'No history yet', delete: 'Delete customer'},
+  te: {bill: 'బిల్లు', paid: 'డబ్బులు వచ్చాయి', settled: 'తీరింది', received: 'వచ్చింది', record: 'జమ చేయి', due: 'బాకీ', none: 'చరిత్ర లేదు', delete: 'కస్టమర్‌ను తొలగించు'},
+  hi: {bill: 'बिल', paid: 'पैसे मिले', settled: 'चुकता', received: 'मिले', record: 'जमा करें', due: 'बाकी', none: 'अभी कोई रिकॉर्ड नहीं', delete: 'ग्राहक हटाएँ'},
+};
+const timeOf = iso => new Date(iso).toLocaleTimeString('en-IN', {hour: 'numeric', minute: '2-digit'});
+
+function renderSales(s, byId, li) {
+  const t = s.today;
+  const label = ([id, q]) => byId[id] ? `${qty(q)} ${byId[id].unit[li]} ${byId[id].names[li]}` : `${qty(q)} ${id}`;
+  $('#salesDate').textContent = new Date().toLocaleDateString('en-IN', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'});
+  $('#dTotal').textContent = money(s.sales);
+  $('#dBills').textContent = `${s.bills} bill${s.bills === 1 ? '' : 's'}`;
+  $('#dCash').textContent = money(t.cash);
+  $('#dCredit').textContent = money(t.credit);
+  $('#dGot').textContent = money(t.collected);
+  $('#dInHand').textContent = `Cash collected today: ${money(t.cash + t.collected)} (cash bills + khata payments).`;
+  $('#dItems').innerHTML = t.items.length
+    ? t.items.map(([id, q, a]) => `<tr><td>${esc(byId[id] ? byId[id].names[li] : id)}</td><td class="num">${qty(q)} <span class="unit">${esc(byId[id] ? byId[id].unit[li] : '')}</span></td><td class="num">${money(a)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Nothing sold yet today.</td></tr>';
+  $('#dEvents').innerHTML = t.events.slice().reverse().map(e => `<li>
+      <span><span class="when">${timeOf(e.at)} · ${e.kind === 'cash' ? 'Cash bill' : e.kind === 'khata' ? `Khata · ${esc(e.who)}` : `Khata payment · ${esc(e.who)}`}</span>
+        ${e.items ? '<br>' + esc(e.items.map(label).join(', ')) : ''}</span>
+      <span class="amt ${e.kind === 'cash' ? '' : e.kind === 'khata' ? 'up' : 'down'}">${e.kind === 'payment' ? '+' : ''}${money(e.amount)}</span>
+    </li>`).join('') || '<li><span class="when">No bills yet today.</span></li>';
+  $('#dEarlier').hidden = !(t.earlier > 0);
+  $('#dEarlier').textContent = `Plus ${money(t.earlier)} from ${t.earlier_bills} earlier bill${t.earlier_bills === 1 ? '' : 's'} today (recorded before details were kept).`;
+}
+const when = iso => new Date(iso).toLocaleString('en-IN', {day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit'});
+const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const money = n => '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2});
+const qty = n => Number(n).toLocaleString('en-IN', {maximumFractionDigits: 3});
+
+let lang = LI[store('lang')] !== undefined ? store('lang') : 'te';
+let voiceOn = store('voice') !== 'off';
+let state = null, rec = null, voices = [], warnedVoice = false, toastTimer;
+
+const SERVER = 'http://127.0.0.1:8000/';
+
+async function api(path, body) {
+  let r;
+  try {
+    r = await fetch(path, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {});
+  } catch (e) {
+    $('#offline').hidden = false;
+    throw new Error('Assistant server is not running — see the red note at the top.');
+  }
+  $('#offline').hidden = true;
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function addMsg(who, text) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.textContent = text;
+  $('#log').append(d);
+  $('#logBox').scrollTop = $('#logBox').scrollHeight;
+}
+
+// quiet = button clicks: no chat bubble, no voice, just a toast
+async function send(text, quiet = false) {
+  text = text.trim();
+  if (!text) return;
+  if (!quiet) addMsg('me', text);
+  try {
+    const r = await api('/api/chat', {text, lang});
+    render(r.state);
+    if (quiet) toast(r.reply);
+    else { addMsg('bot', r.reply); speak(r.reply, r.lang, r.en); }
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+function render(s) {
+  state = s;
+  const li = LI[lang];
+  const byId = Object.fromEntries(s.products.map(p => [p.id, p]));
+  const other = p => lang === 'en' ? p.names[1] : p.names[0];
+  const low = s.products.filter(p => p.stock <= s.low).length;
+
+  $('#sTotal').textContent = money(s.total);
+  $('#sItems').textContent = s.cart.length;
+  $('#sSales').textContent = money(s.sales);
+  $('#sSalesSub').textContent = `${s.bills} bill${s.bills === 1 ? '' : 's'} · cash ${money(s.today.cash)} · khata ${money(s.today.credit)}`;
+  renderSales(s, byId, li);
+  $('#sLow').textContent = low;
+  $('#sLowCard').classList.toggle('warn', low > 0);
+
+  $('#billRows').innerHTML = s.cart.map(c => {
+    const p = byId[c.id];
+    return `<tr>
+      <td>${esc(p.names[li])}<span class="local">${esc(other(p))} · ${money(p.price)}/${esc(p.unit[li])}</span></td>
+      <td class="nowrap"><span class="qty"><button type="button" class="sm no-print" data-cmd="remove 1 ${p.id}" aria-label="One less ${esc(p.names[0])}">−</button><b>${qty(c.qty)}</b><button type="button" class="sm no-print" data-cmd="add 1 ${p.id}" aria-label="One more ${esc(p.names[0])}">+</button></span> <span class="unit">${esc(p.unit[li])}</span></td>
+      <td class="num"><b>${money(c.amount)}</b></td>
+      <td class="no-print"><button type="button" class="sm" data-cmd="remove ${p.id}" aria-label="Remove ${esc(p.names[0])}">✕</button></td>
+    </tr>`;
+  }).join('');
+  $('#billEmpty').hidden = s.cart.length > 0;
+  $('#billTotal').textContent = money(s.total);
+  $('#paidBtn').disabled = $('#newBill').disabled = $('#khataBtn').disabled = !s.cart.length;
+
+  const dues = s.khata.reduce((sum, k) => sum + k.due, 0);
+  const T = KH[lang];
+  const open = new Set([...document.querySelectorAll('#khataList details[open]')].map(d => d.dataset.name));
+  const line = ([id, q]) => byId[id] ? `${qty(q)} ${byId[id].unit[li]} ${byId[id].names[li]}` : `${qty(q)} ${id}`;
+  $('#khataTotal').textContent = dues > 0 ? money(dues) : '';
+  $('#khataList').innerHTML = s.khata.map(k => `
+    <details class="kh" data-name="${esc(k.name)}" ${open.has(k.name) ? 'open' : ''}>
+      <summary><span class="kh-name">${esc(k.name)}</span>${k.due > 0 ? `<b>${money(k.due)}</b>` : `<span class="badge">${T.settled}</span>`}</summary>
+      <div class="kh-body">
+        ${k.due > 0 ? `<form class="pay" data-name="${esc(k.name)}">
+          <label>${T.received} ₹ <input class="cell" type="number" min="0.01" step="any" value="${k.due}" required></label>
+          <button type="submit" class="btn">${T.record}</button>
+        </form>` : ''}
+        <ol class="kh-hist" aria-label="${esc(k.name)} history">${k.history.length ? k.history.slice().reverse().map(h => `<li>
+          <span><span class="when">${when(h.at)}</span><br>${h.amount > 0 ? T.bill : T.paid}${h.items ? ' · ' + esc(h.items.map(line).join(', ')) : ''}</span>
+          <span><span class="amt ${h.amount > 0 ? 'up' : 'down'}">${h.amount > 0 ? '+' : '−'}${money(Math.abs(h.amount))}</span><br><span class="bal">${T.due} ${money(h.balance)}</span></span>
+        </li>`).join('') : `<li><span class="when">${T.none}</span></li>`}</ol>
+        <div><button type="button" class="btn danger" data-delete="${esc(k.name)}" data-due="${k.due}">${T.delete}</button></div>
+      </div>
+    </details>`).join('');
+  $('#khataEmpty').hidden = s.khata.length > 0;
+  $('#khataNames').innerHTML = s.khata.map(k => `<option value="${esc(k.name)}">`).join('');
+
+  const q = $('#search').value.trim().toLowerCase();
+  $('#stockRows').innerHTML = s.products
+    .filter(p => !q || (p.id + ' ' + p.names.join(' ')).toLowerCase().includes(q))
+    .map(p => {
+      const [cls, label] = p.stock <= 0 ? ['out', STATUS[lang][2]] : p.stock <= s.low ? ['low', STATUS[lang][1]] : ['', STATUS[lang][0]];
+      return `<tr>
+        <td>${esc(p.names[li])}<span class="local">${esc(other(p))}</span></td>
+        <td class="num"><input class="cell" type="number" min="0" step="any" value="${p.price}" data-set="price" data-id="${p.id}" aria-label="Price of ${esc(p.names[0])}"></td>
+        <td class="num"><input class="cell" type="number" min="0" step="any" value="${p.stock}" data-set="stock" data-id="${p.id}" aria-label="Stock of ${esc(p.names[0])}"> <span class="unit">${esc(p.unit[li])}</span></td>
+        <td><span class="badge ${cls}">${esc(label)}</span></td>
+        <td><button type="button" class="sm" data-cmd="add 1 ${p.id}" aria-label="Add ${esc(p.names[0])} to bill">+</button></td>
+      </tr>`;
+    }).join('');
+}
+
+function setLang(l, greet = true) {
+  lang = l;
+  store('lang', l);
+  document.documentElement.lang = l;
+  document.querySelectorAll('#langs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === l));
+  $('#chips').innerHTML = EXAMPLES[l].map(x => `<button type="button" class="chip" data-say="${esc(x)}">${esc(x)}</button>`).join('');
+  $('#text').placeholder = PLACEHOLDER[l];
+  if (rec) rec.abort();
+  if (state) render(state);
+  if (greet) addMsg('bot', WELCOME[l]);
+}
+
+// ---------- voice out
+function loadVoices() { voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }
+if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+
+function pickVoice(l) {
+  const code = v => v.lang.toLowerCase().replace('_', '-');
+  return voices.find(v => code(v) === REC[l].toLowerCase()) || voices.find(v => code(v).startsWith(l));
+}
+
+function speak(text, l, en) {
+  if (!voiceOn || !window.speechSynthesis) return;
+  let v = pickVoice(l);
+  if (!v && l !== 'en') {                       // no Telugu/Hindi voice installed -> say it in English
+    if (!warnedVoice) { toast(`No ${LANG_NAME[l]} voice on this computer — speaking English. Microsoft Edge has Telugu & Hindi voices.`); warnedVoice = true; }
+    text = en; l = 'en'; v = pickVoice('en');
+  }
+  const u = new SpeechSynthesisUtterance(text.replace(/₹\s?([\d.,]+)/g, `$1 ${RUPEE[l]}`));
+  u.lang = REC[l];
+  if (v) u.voice = v;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+// ---------- voice in
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) { $('#mic').disabled = true; $('#mic').title = 'Voice input needs Chrome or Edge'; $('#status').textContent = 'Voice input needs Chrome or Edge — type instead'; }
+
+function setListening(on) {
+  $('#mic').classList.toggle('on', on);
+  $('#mic').setAttribute('aria-pressed', on);
+  $('#mic').setAttribute('aria-label', on ? 'Stop listening' : 'Start listening');
+  $('#status').textContent = on ? `Listening… speak in ${LANG_NAME[lang]}` : 'Tap the mic or press Space';
+  if (!on) $('#interim').textContent = '';
+}
+
+function toggleMic() {
+  if (!SR) return toast('Voice input needs Chrome or Edge');
+  if (rec) return rec.stop();
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  rec = new SR();
+  rec.lang = REC[lang];
+  rec.interimResults = true;
+  rec.onstart = () => setListening(true);
+  rec.onend = () => { rec = null; setListening(false); };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed') toast('Please allow microphone access for this page');
+    else if (e.error === 'network') toast('Voice recognition needs an internet connection');
+    else if (!['no-speech', 'aborted'].includes(e.error)) toast('Mic error: ' + e.error);
+  };
+  rec.onresult = e => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+    }
+    $('#interim').textContent = interim;
+    if (final) send(final);
+  };
+  rec.start();
+}
+
+// ---------- khata (credit book)
+async function khata(body) {
+  try {
+    const r = await api('/api/khata', {...body, lang});
+    render(r.state);
+    toast(r.reply);
+    return true;
+  } catch (e) {
+    toast(e.message);
+    return false;
+  }
+}
+
+function showTab(tab) {
+  const onKhata = tab === 'khata';
+  $('#billView').hidden = onKhata;
+  $('#khataView').hidden = !onKhata;
+  $('#tabBill').setAttribute('aria-selected', !onKhata);
+  $('#tabKhata').setAttribute('aria-selected', onKhata);
+  document.querySelectorAll('.bill-only').forEach(b => b.hidden = onKhata);
+}
+
+$('#tabBill').addEventListener('click', () => showTab('bill'));
+$('#tabKhata').addEventListener('click', () => showTab('khata'));
+$('#khataForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('#khataName').value.trim();
+  if (!name) { $('#khataName').focus(); return toast("Type the customer's name"); }
+  if (await khata({name})) $('#khataName').value = '';
+});
+document.addEventListener('click', e => {
+  const del = e.target.closest('[data-delete]');
+  if (!del) return;
+  const name = del.dataset.delete, due = Number(del.dataset.due);
+  const owes = due > 0 ? `\n${name} still owes ${money(due)}.` : '';
+  if (confirm(`Delete ${name}'s khata?${owes}\nTheir khata history will be removed. This cannot be undone.`)) khata({name, delete: true});
+});
+$('#salesBtn').addEventListener('click', () => $('#salesDialog').showModal());
+$('#salesClose').addEventListener('click', () => $('#salesDialog').close());
+$('#salesDialog').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });   // click outside
+document.addEventListener('submit', e => {
+  const form = e.target.closest('form.pay');
+  if (!form) return;
+  e.preventDefault();
+  khata({name: form.dataset.name, pay: Number(form.querySelector('input').value)});
+});
+
+// ---------- wiring
+$('#mic').addEventListener('click', toggleMic);
+$('#form').addEventListener('submit', e => { e.preventDefault(); send($('#text').value); $('#text').value = ''; });
+$('#langs').addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (b && b.dataset.l !== lang) setLang(b.dataset.l); });
+$('#search').addEventListener('input', () => state && render(state));
+$('#newBill').addEventListener('click', () => send('clear', true));
+$('#paidBtn').addEventListener('click', () => send('checkout', true));
+$('#printBtn').addEventListener('click', () => window.print());
+$('#voiceBtn').addEventListener('click', () => {
+  voiceOn = !voiceOn;
+  store('voice', voiceOn ? 'on' : 'off');
+  $('#voiceBtn').textContent = voiceOn ? '🔊 Voice on' : '🔇 Voice off';
+  $('#voiceBtn').setAttribute('aria-pressed', voiceOn);
+  if (!voiceOn && window.speechSynthesis) speechSynthesis.cancel();
+});
+document.addEventListener('click', e => {
+  const cmd = e.target.closest('[data-cmd]');
+  if (cmd) send(cmd.dataset.cmd, true);
+  const say = e.target.closest('[data-say]');
+  if (say) send(say.dataset.say);
+});
+document.addEventListener('change', e => {
+  const input = e.target.closest('[data-set]');
+  if (!input) return;
+  api('/api/set', {id: input.dataset.id, [input.dataset.set]: Number(input.value)})
+    .then(r => render(r.state))
+    .catch(err => { toast(err.message); if (state) render(state); });
+});
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !e.repeat && !e.target.closest('input, textarea, select, button')) { e.preventDefault(); toggleMic(); }
+});
+
+$('#billDate').textContent = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'});
+$('#voiceBtn').textContent = voiceOn ? '🔊 Voice on' : '🔇 Voice off';
+$('#voiceBtn').setAttribute('aria-pressed', voiceOn);
+setLang(lang);
+if (!location.protocol.startsWith('http')) {   // opened index.html as a file / preview: jump to the server if it is up
+  fetch(SERVER + 'api/state', {mode: 'no-cors'}).then(() => location.replace(SERVER)).catch(() => {});
+}
+api('/api/state').then(render).catch(() => {});   // failure shows the red note
+</script>
+</body>
+</html>
